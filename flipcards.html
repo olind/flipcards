@@ -9,6 +9,8 @@
   @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Regular.ttf"); font-weight: 400; }
   @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Bold.ttf"); font-weight: 700; }
   @font-face { font-family: "Fredoka"; src: url("vendor/Fredoka.ttf"); font-weight: 300 700; }
+  /* Andika has the phonetic symbols (ə, ɪ, ˈ ...) that Atkinson Hyperlegible lacks. */
+  @font-face { font-family: "Andika"; src: url("vendor/Andika-Regular.ttf"); font-weight: 400; }
 
   /* Layout: settings panel on the left, true-size A4 sheet preview on the right; print shows only the sheets. */
   :root {
@@ -21,6 +23,7 @@
     --line: #9aa5b4;
     --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
     --body: "Atkinson Hyperlegible", Verdana, system-ui, sans-serif;
+    --ipa: "Andika", "Lucida Grande", "Arial Unicode MS", sans-serif;
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 var(--body); }
@@ -58,9 +61,11 @@
   /* On screen the sheet shows the whole A4 page with its 15mm margin; in print the browser adds that margin via @page. */
   .sheet { width: 210mm; height: 297mm; background: var(--paper); padding: 15mm; box-shadow: 0 2px 10px rgba(31,42,55,.15); overflow: hidden; }
   .grid { width: 100%; height: 100%; display: grid; }
-  .card { outline: 0.25mm dashed var(--line); position: relative; display: flex; flex-direction: column; gap: 3mm; align-items: center; justify-content: center; text-align: center; padding: 9mm 7mm; overflow: hidden; }
+  .card { outline: 0.25mm dashed var(--line); position: relative; overflow: hidden; }
   .card.empty { outline-color: transparent; }
-  .word { font-family: var(--body); font-weight: 700; line-height: 1.15; overflow-wrap: anywhere; hyphens: manual; }
+  /* The word sits a third of the way up from the bottom (see TEXT_Y), centred left to right. */
+  .word { position: absolute; left: 7mm; right: 7mm; top: 66.667%; transform: translateY(-50%); text-align: center; font-family: var(--body); font-weight: 700; line-height: 1.15; letter-spacing: 0.08em; white-space: nowrap; }
+  .ipa { position: absolute; left: 7mm; right: 7mm; text-align: center; font-family: var(--ipa); color: var(--muted); line-height: 1.15; white-space: nowrap; }
   .tag { position: absolute; font: 500 8pt var(--display); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
   .tag.set { bottom: 2.5mm; right: 3mm; text-transform: none; letter-spacing: 0; }
 
@@ -86,6 +91,10 @@
       <textarea id="words" spellcheck="false"></textarea>
     </label>
 
+    <div>
+      <label class="check" for="showipa"><input type="checkbox" id="showipa" checked> British pronunciation above one-word English words</label>
+      <p class="hint" id="ipastatus">Looked up on Wiktionary. Needs internet the first time; after that it's remembered.</p>
+    </div>
     <label for="setname">Label on each card (optional)
       <input type="text" id="setname" placeholder="e.g. Week 41">
     </label>
@@ -93,8 +102,8 @@
       <label for="perpage">Cards per page
         <select id="perpage">
           <option value="8">8 (big)</option>
-          <option value="12" selected>12</option>
-          <option value="16">16 (small)</option>
+          <option value="12">12</option>
+          <option value="16" selected>16 (small)</option>
         </select>
       </label>
       <label for="front">Front side
@@ -168,22 +177,135 @@ function parseLine(line) {
   return { en: m[1].trim(), sv: m[2].trim() };
 }
 
-function sizeFor(text, cols) {
-  const base = { 2: 26, 3: 20, 4: 15 }[cols];
-  const longest = Math.max(...text.split(/\s+/).map(w => w.length));
-  let size = base;
-  if (text.length > 12) size *= 0.85;
-  if (text.length > 20) size *= 0.85;
-  const maxWord = { 2: 12, 3: 9, 4: 7 }[cols];
-  if (longest > maxWord) size *= maxWord / longest;
-  return Math.max(size, 10).toFixed(1) + "pt";
+// Card geometry shared by the preview and the PDF (mm). Cards fill the 180 x 267mm area inside the page margin.
+const AREA_W = 180, AREA_H = 267, PAD_X = 7, PAD_Y = 9;
+const TEXT_Y = 2 / 3;   // the word's centre, as a share of the card height from the top
+const LINE = 1.15;      // line height, in font sizes
+const PT = 25.4 / 72;   // mm per point
+const SPACING = 0.08;   // extra space after each letter, in font sizes: a little air helps readers with dyslexia
+
+// A word's width in mm including the letter spacing; widthOf(text, pt) measures it without.
+const spacedWidth = (widthOf, text, pt) => widthOf(text, pt) + SPACING * pt * PT * [...text].length;
+
+// Start at full size and shrink only until the text fits the card's safe area, so short words stay big.
+// widthOf(text, pt) gives a line's width in mm. Returns the font size and the wrapped lines.
+function fitText(text, cols, rows, widthOf) {
+  const innerW = AREA_W / cols - 2 * PAD_X;
+  const innerH = 2 * (AREA_H / rows * Math.min(TEXT_Y, 1 - TEXT_Y) - PAD_Y);
+  const words = text.split(/\s+/);
+  let pt = { 2: 26, 3: 20, 4: 15 }[cols], lines;
+  for (;; pt -= 0.5) {
+    lines = [];
+    for (const w of words) {
+      const last = lines.length - 1;
+      if (last >= 0 && spacedWidth(widthOf, lines[last] + " " + w, pt) <= innerW) lines[last] += " " + w;
+      else lines.push(w);
+    }
+    const widest = Math.max(...lines.map(l => spacedWidth(widthOf, l, pt)));
+    if ((widest <= innerW && lines.length * pt * PT * LINE <= innerH) || pt <= 8) break;
+  }
+  return { pt, lines };
 }
 
-function cardHTML(pair, lang, setName, cols) {
+// On screen, measure with the same fonts the page shows.
+const measureCtx = document.createElement("canvas").getContext("2d");
+function screenWidth(text, pt) {
+  measureCtx.font = `700 ${pt}pt ${getComputedStyle(document.body).getPropertyValue("--body")}`;
+  return measureCtx.measureText(text).width * 25.4 / 96;
+}
+function screenWidthIPA(text, pt) {
+  measureCtx.font = `400 ${pt}pt ${getComputedStyle(document.body).getPropertyValue("--ipa")}`;
+  return measureCtx.measureText(text).width * 25.4 / 96;
+}
+
+// The pronunciation line sits just above the word, a bit smaller, shrunk further if it is too wide.
+const IPA_GAP = 1.5; // mm between pronunciation and word
+function fitIPA(ipa, wordPt, cols, widthOf) {
+  const innerW = AREA_W / cols - 2 * PAD_X;
+  let pt = Math.max(8, wordPt * 0.65);
+  while (pt > 6 && widthOf(ipa, pt) > innerW) pt -= 0.5;
+  return pt;
+}
+
+// ---- Pronunciation: British (RP/UK) IPA from Wiktionary, only for one-word English cards.
+// Answers are remembered in this browser, so each word is looked up once.
+let ipaCache = {};
+try { ipaCache = JSON.parse(load("ipa") || "{}") || {}; } catch (e) {}
+const ipaPending = new Map(); // word -> promise, so each word is asked for at most once per visit
+const ipaQueue = [];
+let ipaActive = 0, ipaRenderQueued = false;
+
+const oneWord = en => /^[a-z]+(?:['’-][a-z]+)*$/i.test(en.trim());
+
+function ipaFor(pair) {
+  if (!$("showipa").checked || !oneWord(pair.en)) return "";
+  const word = pair.en.trim().toLowerCase();
+  if (word in ipaCache) return ipaCache[word];
+  lookupIPA(word);
+  return "";
+}
+
+function lookupIPA(word) {
+  if (!ipaPending.has(word)) ipaPending.set(word, new Promise(resolve => { ipaQueue.push({ word, resolve }); pumpIPA(); }));
+  return ipaPending.get(word);
+}
+
+// Two requests at a time: Wiktionary turns away clients that ask too fast.
+function pumpIPA() {
+  while (ipaActive < 2 && ipaQueue.length) {
+    const { word, resolve } = ipaQueue.shift();
+    ipaActive++;
+    fetchIPA(word).then(ipa => {
+      if (ipa !== null) { ipaCache[word] = ipa; store("ipa", JSON.stringify(ipaCache)); }
+      ipaActive--;
+      resolve();
+      pumpIPA();
+      if (!ipaRenderQueued) { ipaRenderQueued = true; requestAnimationFrame(() => { ipaRenderQueued = false; render(); }); }
+    });
+  }
+}
+
+// Returns the IPA, "" when Wiktionary has no British pronunciation, or null when it could not be reached.
+async function fetchIPA(word) {
+  try {
+    const url = "https://en.wiktionary.org/w/api.php?action=parse&prop=wikitext&format=json&formatversion=2&redirects=1&origin=*&page=" + encodeURIComponent(word);
+    const data = await (await fetch(url, { signal: AbortSignal.timeout(10000) })).json();
+    if (data.error) return data.error.code === "missingtitle" ? "" : null;
+    return pickBritish(data.parse.wikitext);
+  } catch (e) {
+    return null;
+  }
+}
+
+// Wiktionary writes pronunciations as {{IPA|en|/ˈpeɪvmənt/|a=RP,GA}}. Take the first one marked RP, UK or
+// SSB (standard British), else one with no accent marked; never one marked only for another accent.
+function pickBritish(wikitext) {
+  const english = (wikitext.split("==English==")[1] || "").split(/\n==[^=]/)[0];
+  const found = [...english.matchAll(/\{\{IPA\|en\|([^}]*)\}\}/g)].map(m => {
+    const parts = m[1].split("|");
+    return { accent: (parts.find(x => x.startsWith("a=")) || "").slice(2), ipa: parts.find(x => /^\/.+\/$/.test(x)) };
+  }).filter(x => x.ipa);
+  const best = found.find(x => /\b(RP|UK|SSB)\b/.test(x.accent)) || found.find(x => !x.accent);
+  return best ? tidyIPA(best.ipa) : "";
+}
+
+// Match the style of British learner dictionaries: r instead of ɹ, optional sounds shown plainly, no tie bars.
+const tidyIPA = ipa => ipa.replace(/ɹ/g, "r").replace(/[()]/g, "").replace(/\u0361/g, "");
+
+// Start any missing lookups and wait for them (at most 15 seconds), so the PDF gets them too.
+async function ipaReady() {
+  pairs.forEach(ipaFor);
+  await Promise.race([Promise.all(ipaPending.values()), new Promise(r => setTimeout(r, 15000))]);
+}
+
+function cardHTML(pair, lang, setName, cols, rows) {
   if (!pair) return `<div class="card empty"></div>`;
-  const text = pair[lang];
+  const { pt, lines } = fitText(pair[lang], cols, rows, screenWidth);
+  const ipa = lang === "en" ? ipaFor(pair) : "";
+  const above = 100 * (1 - TEXT_Y), half = lines.length * pt * PT * LINE / 2 + IPA_GAP;
   return `<div class="card">
-    <span class="word" style="font-size:${sizeFor(text, cols)}">${esc(text)}</span>
+    ${ipa ? `<span class="ipa" style="font-size:${fitIPA(ipa, pt, cols, screenWidthIPA)}pt;bottom:calc(${above}% + ${half}mm)">${esc(ipa)}</span>` : ""}
+    <span class="word" style="font-size:${pt}pt">${lines.map(esc).join("<br>")}</span>
     ${setName ? `<span class="tag set">${esc(setName)}</span>` : ""}
   </div>`;
 }
@@ -241,7 +363,7 @@ function render() {
   sheetPages().forEach((slots, i) => {
     const n = pages > 1 ? ` ${Math.floor(i / 2) + 1}` : "";
     html += `<div class="sheet-label">Sheet${n}, ${i % 2 ? "back" : "front"}</div><section class="sheet"><div class="grid" style="${gridStyle}">` +
-      slots.map(s => cardHTML(s && s.pair, s && s.lang, setName, cols)).join("") + `</div></section>`;
+      slots.map(s => cardHTML(s && s.pair, s && s.lang, setName, cols, rows)).join("") + `</div></section>`;
   });
   $("preview").innerHTML = html;
 }
@@ -252,55 +374,65 @@ function render() {
   if (saved !== null) el.value = saved;
   el.addEventListener("input", () => { store(id, el.value); render(); });
 });
+const savedIPA = load("showipa");
+if (savedIPA !== null) $("showipa").checked = savedIPA === "1";
+$("showipa").addEventListener("change", () => { store("showipa", $("showipa").checked ? "1" : "0"); render(); });
 if (!$("words").value.trim()) $("words").value = SAMPLE;
 $("print").addEventListener("click", () => window.print());
 
 // ---- PDF: words and cut lines are real text and lines (small file, prints fast). The 15mm margin is part of each page, so no print setting can move or shrink it.
 const PAGE_W = 210, PAGE_H = 297, MARGIN = 15; // mm
-const PT = 25.4 / 72;                          // mm per point
-const FONT_URL = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/atkinsonhyperlegible/AtkinsonHyperlegible-Bold.ttf";
-let fontData = null;
+const FONTS_URL = "https://cdn.jsdelivr.net/gh/google/fonts@main/ofl/";
+const fontData = {};
 
-async function loadFont() {
-  if (fontData !== null) return fontData;
+// A font file as base64 for jsPDF, or "" if it can't be loaded.
+async function loadFont(file, remote) {
+  if (file in fontData) return fontData[file];
   try {
-    const res = await fetchLocalFirst("vendor/AtkinsonHyperlegible-Bold.ttf", FONT_URL);
+    const res = await fetchLocalFirst("vendor/" + file, FONTS_URL + remote);
     const buf = new Uint8Array(await res.arrayBuffer());
     let bin = "";
     for (let i = 0; i < buf.length; i += 0x8000) bin += String.fromCharCode(...buf.subarray(i, i + 0x8000));
-    fontData = btoa(bin);
+    fontData[file] = btoa(bin);
   } catch (e) {
-    fontData = ""; // fall back to the PDF's built-in Helvetica, which also has å, ä and ö
+    fontData[file] = "";
   }
-  return fontData;
+  return fontData[file];
 }
 
-function pdfCard(doc, font, slot, x, y, w, h, cols, setName) {
+// Dashed cut lines around the filled slots. Each edge is drawn once: two overlapping dashed lines
+// drift out of step and print as one solid line.
+function pdfCutLines(doc, slots, cols, rows, w, h) {
   doc.setDrawColor(154, 165, 180);
   doc.setLineWidth(0.25);
   doc.setLineDashPattern([1.2, 1], 0);
-  doc.rect(x, y, w, h);
+  const filled = (r, c) => r >= 0 && r < rows && c >= 0 && c < cols && !!slots[r * cols + c];
+  for (let r = 0; r <= rows; r++) for (let c = 0; c < cols; c++)
+    if (filled(r - 1, c) || filled(r, c)) doc.line(MARGIN + c * w, MARGIN + r * h, MARGIN + (c + 1) * w, MARGIN + r * h);
+  for (let c = 0; c <= cols; c++) for (let r = 0; r < rows; r++)
+    if (filled(r, c - 1) || filled(r, c)) doc.line(MARGIN + c * w, MARGIN + r * h, MARGIN + c * w, MARGIN + (r + 1) * h);
+}
 
+function pdfCard(doc, font, ipaFont, slot, x, y, w, h, cols, rows, setName) {
   const { pair, lang } = slot;
-  const text = pair[lang];
-  const innerW = w - 14, innerH = h - 18;
-
-  // Start at full size and shrink only until the text fits the card's safe area, so short words stay big.
   doc.setFont(font, "bold");
-  let pt = { 2: 26, 3: 20, 4: 15 }[cols], lines, lineH;
-  for (;;) {
-    doc.setFontSize(pt);
-    lines = doc.splitTextToSize(text, innerW);
-    lineH = pt * PT * 1.15;
-    const widest = Math.max(...lines.map(l => doc.getTextWidth(l)));
-    const blockH = lines.length * lineH;
-    if ((widest <= innerW && blockH <= innerH) || pt <= 8) break;
-    pt -= 0.5;
-  }
-
-  const cy = y + (h - lines.length * lineH) / 2;
+  const { pt, lines } = fitText(pair[lang], cols, rows, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); });
+  doc.setFontSize(pt);
+  const lineH = pt * PT * LINE;
+  const cy = y + h * TEXT_Y - lines.length * lineH / 2;
   doc.setTextColor(31, 42, 55);
-  lines.forEach((l, i) => doc.text(l, x + w / 2, cy + lineH * (i + 0.5), { align: "center", baseline: "middle" }));
+  // Centred by hand, since jsPDF's own centring ignores the letter spacing.
+  lines.forEach((l, i) => doc.text(l, x + (w - spacedWidth(t => doc.getTextWidth(t), l, pt)) / 2, cy + lineH * (i + 0.5),
+    { baseline: "middle", charSpace: SPACING * pt * PT }));
+
+  const ipa = lang === "en" && ipaFont ? ipaFor(pair) : "";
+  if (ipa) {
+    doc.setFont(ipaFont, "normal");
+    const ipaPt = fitIPA(ipa, pt, cols, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); });
+    doc.setFontSize(ipaPt);
+    doc.setTextColor(107, 118, 134);
+    doc.text(ipa, x + w / 2, cy - IPA_GAP - ipaPt * PT * LINE / 2, { align: "center", baseline: "middle" });
+  }
 
   if (setName) {
     doc.setFont(font, "bold");
@@ -318,20 +450,34 @@ async function downloadPDF() {
   btn.textContent = "Making PDF…";
   try {
     const doc = new jspdf.jsPDF({ unit: "mm", format: "a4", orientation: "portrait", compress: true });
-    const ttf = await loadFont();
-    let font = "helvetica";
+    // Without its own font the PDF falls back to built-in Helvetica, which has å, ä and ö but no phonetic
+    // symbols, so pronunciations are left out then.
+    const ttf = await loadFont("AtkinsonHyperlegible-Bold.ttf", "atkinsonhyperlegible/AtkinsonHyperlegible-Bold.ttf");
+    let font = "helvetica", ipaFont = "";
     if (ttf) {
       doc.addFileToVFS("AtkinsonHyperlegible-Bold.ttf", ttf);
       doc.addFont("AtkinsonHyperlegible-Bold.ttf", "Atkinson", "bold");
       font = "Atkinson";
+    }
+    if ($("showipa").checked) {
+      btn.textContent = "Looking up pronunciations…";
+      await ipaReady();
+      btn.textContent = "Making PDF…";
+      const andika = await loadFont("Andika-Regular.ttf", "andika/Andika-Regular.ttf");
+      if (andika) {
+        doc.addFileToVFS("Andika-Regular.ttf", andika);
+        doc.addFont("Andika-Regular.ttf", "Andika", "normal");
+        ipaFont = "Andika";
+      }
     }
     const [cols, rows] = LAYOUTS[+$("perpage").value];
     const setName = $("setname").value.trim();
     const w = (PAGE_W - 2 * MARGIN) / cols, h = (PAGE_H - 2 * MARGIN) / rows;
     sheetPages().forEach((slots, p) => {
       if (p) doc.addPage("a4", "portrait");
+      pdfCutLines(doc, slots, cols, rows, w, h);
       slots.forEach((slot, i) => {
-        if (slot) pdfCard(doc, font, slot, MARGIN + (i % cols) * w, MARGIN + Math.floor(i / cols) * h, w, h, cols, setName);
+        if (slot) pdfCard(doc, font, ipaFont, slot, MARGIN + (i % cols) * w, MARGIN + Math.floor(i / cols) * h, w, h, cols, rows, setName);
       });
     });
     const name = (setName || "glosor").replace(/[^\p{L}\p{N} _-]/gu, "").trim().replace(/\s+/g, "-");
@@ -344,6 +490,7 @@ async function downloadPDF() {
 $("pdf").addEventListener("click", downloadPDF);
 
 render();
+document.fonts.ready.then(render); // measure again once the web fonts have loaded
 </script>
 </body>
 </html>
