@@ -1,4 +1,4 @@
-# Glosor Flipcards
+# Flip cards: glosor
 
 Tool to generate flipcards for helping kids with homework: printable two-sided cards for the weekly English words, English on the front, Swedish on the back.
 
@@ -18,8 +18,8 @@ Tool to generate flipcards for helping kids with homework: printable two-sided c
 ## Good to know
 
 - **Cards per page:** 16 is the default. Choose 12 or 8 for bigger cards.
-- **Pronunciation:** one-word English cards show the British pronunciation (IPA, e.g. /ˈpeɪvmənt/) above the word. It's looked up on Wiktionary, so it needs internet the first time; after that the browser remembers it. Phrases and words without a British pronunciation get none. Untick the box to leave it out.
-- **Label:** the "Label on each card" field (for example "Week 41") prints in the corner so different weeks don't get mixed up.
+- **Pronunciation:** one-word English cards show the British pronunciation (IPA, e.g. /ˈpeɪvmənt/) above the word. It's looked up on Wiktionary, so it needs internet the first time; after that the browser remembers it. Phrases and words without a British pronunciation get none. Untick "Add British pronunciation where possible" to leave it out.
+- **Label:** the "Labels" field (for example "Week 41") prints in the corner so different weeks don't get mixed up.
 - **Spelling:** cards show words exactly as pasted, so fix typos in the list first.
 - **Saved settings:** the word list and settings are remembered in each browser, separately for the online page and the local file.
 - **Sharing at home without internet (optional):** double-click `start-server.command` and open the address it shows on any device at home. Close the window to stop.
@@ -29,7 +29,7 @@ Tool to generate flipcards for helping kids with homework: printable two-sided c
 | File | What it is |
 |---|---|
 | `flipcards.html` | The flipcard maker |
-| `vendor/` | PDF maker ([jsPDF](https://github.com/parallax/jsPDF), MIT) and fonts (Atkinson Hyperlegible, Fredoka and Andika for the phonetic symbols, SIL Open Font License), so it works offline |
+| `vendor/` | PDF maker ([jsPDF](https://github.com/parallax/jsPDF), MIT) and fonts (Atkinson Hyperlegible, and Andika for the phonetic symbols, SIL Open Font License), so it works offline |
 | `start-server.command` | Shares the page on the home network while its window is open |
 | `index.html` | Start page; it opens the flipcard maker |
 

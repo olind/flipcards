@@ -3,12 +3,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Glosor Flipcards</title>
+<title>Flip cards: glosor</title>
 <style>
   /* Fonts and PDF maker live in vendor/, so the page works without internet. */
   @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Regular.ttf"); font-weight: 400; }
   @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Bold.ttf"); font-weight: 700; }
-  @font-face { font-family: "Fredoka"; src: url("vendor/Fredoka.ttf"); font-weight: 300 700; }
   /* Andika has the phonetic symbols (ə, ɪ, ˈ ...) that Atkinson Hyperlegible lacks. */
   @font-face { font-family: "Andika"; src: url("vendor/Andika-Regular.ttf"); font-weight: 400; }
 
@@ -21,7 +20,6 @@
     --accent: #2f6fd6;
     --accent-soft: #e3ecfb;
     --line: #9aa5b4;
-    --display: "Fredoka", "Trebuchet MS", system-ui, sans-serif;
     --body: "Atkinson Hyperlegible", Verdana, system-ui, sans-serif;
     --ipa: "Andika", "Lucida Grande", "Arial Unicode MS", sans-serif;
   }
@@ -32,20 +30,19 @@
   @media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
 
   .panel { background: var(--paper); border-radius: 10px; padding: 20px; display: grid; gap: 16px; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; }
-  h1 { font: 600 24px/1.1 var(--display); margin: 0; }
-  h2 { font: 600 16px/1.2 var(--display); margin: 0; }
+  h1 { font: 700 24px/1.1 var(--body); margin: 0; }
+  h2 { font: 700 16px/1.2 var(--body); margin: 0; }
   .hint { color: var(--muted); font-size: 13px; margin: 0; }
   label { display: grid; gap: 6px; font-weight: 700; font-size: 13px; }
   textarea, input[type=text], select { font: 15px/1.4 var(--body); color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px; width: 100%; }
   textarea { min-height: 220px; resize: vertical; }
   textarea:focus, input:focus, select:focus, button:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
-  .row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
   .check { display: flex; align-items: center; gap: 8px; font-weight: 400; font-size: 14px; }
   .status { font-size: 13px; color: var(--muted); }
   .status b { color: var(--ink); }
   .warn { color: #b4441c; }
   button { font: inherit; color: inherit; cursor: pointer; }
-  .primary { font: 600 16px var(--display); background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 12px; }
+  .primary { font: 700 16px var(--body); background: var(--accent); color: #fff; border: 0; border-radius: 8px; padding: 12px; }
   .primary:hover { filter: brightness(1.08); }
   .primary:disabled { opacity: .6; cursor: progress; }
   .secondary { background: none; border: 0; color: var(--accent); font-size: 13px; padding: 0; margin-top: -8px; text-decoration: underline; }
@@ -55,7 +52,7 @@
 
   .preview { display: grid; gap: 20px; justify-items: center; zoom: 0.62; }
   @media (max-width: 860px) { .preview { zoom: 0.42; } }
-  .sheet-label { font: 600 22px var(--display); color: var(--muted); justify-self: start; margin-bottom: -12px; }
+  .sheet-label { font: 700 22px var(--body); color: var(--muted); justify-self: start; margin-bottom: -12px; }
 
   /* A4 sheet */
   /* On screen the sheet shows the whole A4 page with its 15mm margin; in print the browser adds that margin via @page. */
@@ -66,7 +63,7 @@
   /* The word sits a third of the way up from the bottom (see TEXT_Y), centred left to right. */
   .word { position: absolute; left: 7mm; right: 7mm; top: 66.667%; transform: translateY(-50%); text-align: center; font-family: var(--body); font-weight: 700; line-height: 1.15; letter-spacing: 0.08em; white-space: nowrap; }
   .ipa { position: absolute; left: 7mm; right: 7mm; text-align: center; font-family: var(--ipa); color: var(--muted); line-height: 1.15; white-space: nowrap; }
-  .tag { position: absolute; font: 500 8pt var(--display); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
+  .tag { position: absolute; font: 700 7pt var(--body); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
   .tag.set { bottom: 2.5mm; right: 3mm; text-transform: none; letter-spacing: 0; }
 
   @page { size: A4 portrait; margin: 15mm; }
@@ -85,49 +82,32 @@
 <body>
 <div class="app">
   <form class="panel" id="settings" onsubmit="return false">
-    <h1>Glosor Flipcards</h1>
-    <p class="hint">Paste the week's list, one word per line: <i>english – svenska</i>. Any dash, colon or tab works.</p>
+    <h1>Flip cards: glosor</h1>
+    <p class="hint">Generates flip cards from a word list. The format is: <i>english - swedish</i></p>
     <label for="words">Word list
       <textarea id="words" spellcheck="false"></textarea>
     </label>
 
-    <div>
-      <label class="check" for="showipa"><input type="checkbox" id="showipa" checked> British pronunciation above one-word English words</label>
-      <p class="hint" id="ipastatus">Looked up on Wiktionary. Needs internet the first time; after that it's remembered.</p>
-    </div>
-    <label for="setname">Label on each card (optional)
+    <label class="check" for="showipa"><input type="checkbox" id="showipa" checked> Add British pronunciation where possible</label>
+    <label for="setname">Labels (optional)
       <input type="text" id="setname" placeholder="e.g. Week 41">
     </label>
-    <div class="row">
-      <label for="perpage">Cards per page
-        <select id="perpage">
-          <option value="8">8 (big)</option>
-          <option value="12">12</option>
-          <option value="16" selected>16 (small)</option>
-        </select>
-      </label>
-      <label for="front">Front side
-        <select id="front">
-          <option value="en" selected>English</option>
-          <option value="sv">Swedish</option>
-        </select>
-      </label>
-    </div>
-    <label for="flip">When you turn the paper over, you flip it
-      <select id="flip">
-        <option value="long" selected>Sideways, like a page in a book</option>
-        <option value="short">Top to bottom, like a notepad</option>
+    <label for="perpage">Cards per page
+      <select id="perpage">
+        <option value="8">8</option>
+        <option value="12">12</option>
+        <option value="16" selected>16</option>
       </select>
     </label>
     <div class="status" id="status"></div>
     <button type="button" class="primary" id="pdf">Download PDF</button>
-    <button type="button" class="secondary" id="print">Or print straight from the browser</button>
+    <button type="button" class="secondary" id="print">Or print from browser (can mess up the margins on the cards)</button>
 
     <section class="howto" aria-labelledby="howto-title">
       <h2 id="howto-title">How to print</h2>
       <ol>
         <li>Click <b>Download PDF</b> and open the file (it opens in Preview on a Mac). Choose <b>File → Print</b>, set scale to <b>100%</b> (not "Scale to fit"), and choose pages <b>1 to 1</b>. Print.</li>
-        <li id="flipstep">Take the printed sheet and turn it over <b>sideways, like a page in a book</b>. Keep the top of the page at the same end as before.</li>
+        <li>Take the printed sheet and turn it over <b>sideways, like a page in a book</b>. Keep the top of the page at the same end as before.</li>
         <li>Put it back in the paper tray and print pages <b>2 to 2</b>.</li>
         <li>Cut along the dashed lines.</li>
       </ol>
@@ -316,20 +296,16 @@ let pairs = [];
 function sheetPages() {
   const per = +$("perpage").value;
   const [cols, rows] = LAYOUTS[per];
-  const frontLang = $("front").value;
-  const backLang = frontLang === "en" ? "sv" : "en";
-  const flipShort = $("flip").value === "short";
   const out = [];
   for (let p = 0; p * per < pairs.length; p++) {
     const chunk = pairs.slice(p * per, p * per + per);
     const front = [], back = [];
-    for (let i = 0; i < per; i++) front.push(chunk[i] ? { pair: chunk[i], lang: frontLang } : null);
-    // The back of the card at (r, c) sits mirrored: same row, opposite column for a long-edge flip;
-    // same column, opposite row for a short-edge flip.
+    for (let i = 0; i < per; i++) front.push(chunk[i] ? { pair: chunk[i], lang: "en" } : null);
+    // The sheet is turned over sideways, so the back of the card at (r, c) sits in the same row, opposite column.
     for (let r = 0; r < rows; r++) {
       for (let c = 0; c < cols; c++) {
-        const src = flipShort ? (rows - 1 - r) * cols + c : r * cols + (cols - 1 - c);
-        back.push(chunk[src] ? { pair: chunk[src], lang: backLang } : null);
+        const src = r * cols + (cols - 1 - c);
+        back.push(chunk[src] ? { pair: chunk[src], lang: "sv" } : null);
       }
     }
     out.push(front, back);
@@ -342,18 +318,10 @@ function render() {
   const per = +$("perpage").value;
   const [cols, rows] = LAYOUTS[per];
   const setName = $("setname").value.trim();
-  const flipShort = $("flip").value === "short";
 
   const bad = pairs.filter(p => p.bad).length;
   const pages = Math.ceil(pairs.length / per) || 0;
-  $("status").innerHTML = pairs.length
-    ? `<b>${pairs.length} cards</b> on ${pages} sheet${pages > 1 ? "s" : ""} (${pages * 2} printed pages)` +
-      (bad ? `<br><span class="warn">${bad} line${bad > 1 ? "s have" : " has"} no translation. Check the dash.</span>` : "")
-    : "Paste some words to see the cards.";
-
-  $("flipstep").innerHTML = flipShort
-    ? "Take the printed sheet and turn it over <b>top to bottom, like a notepad</b>. The top of the page now points the other way."
-    : "Take the printed sheet and turn it over <b>sideways, like a page in a book</b>. Keep the top of the page at the same end as before.";
+  $("status").innerHTML = bad ? `<span class="warn">${bad} line${bad > 1 ? "s have" : " has"} no translation. Check the dash.</span>` : "";
   $("moresheets").hidden = pages < 2;
   $("moresheets").innerHTML = pages < 2 ? "" : "<b>More than one sheet:</b> do one sheet at a time. " +
     Array.from({ length: pages }, (_, i) => `Sheet ${i + 1} is pages ${i * 2 + 1} and ${i * 2 + 2}`).join(", ") + ".";
@@ -368,7 +336,7 @@ function render() {
   $("preview").innerHTML = html;
 }
 
-["words", "setname", "perpage", "front", "flip"].forEach(id => {
+["words", "setname", "perpage"].forEach(id => {
   const el = $(id);
   const saved = load(id);
   if (saved !== null) el.value = saved;
