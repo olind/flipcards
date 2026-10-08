@@ -32,11 +32,12 @@ Tool to generate flipcards for helping kids with homework: printable two-sided c
 | `vendor/` | PDF maker ([jsPDF](https://github.com/parallax/jsPDF), MIT) and fonts (Atkinson Hyperlegible, and Andika for the phonetic symbols, SIL Open Font License), so it works offline |
 | `start-server.command` | Shares the page on the home network while its window is open |
 | `index.html` | Start page; it opens the flipcard maker |
+| `glhf-ola.png` | The "GLHF" sign-off at the bottom of the left bar |
 
 ## History
 
 - **2026-10-07:** Built and test-printed, with emoji icons on the Swedish side.
-- **2026-10-08:** Icons removed: the picked emoji were worse than none. If icons come back, they need a smarter source. Published on GitHub Pages. 16 cards per page by default; words sit a third from the bottom; British pronunciation above one-word English cards; a little extra letter spacing for easier reading.
+- **2026-10-08:** Icons removed: the picked emoji were worse than none. If icons come back, they need a smarter source. Published on GitHub Pages. 16 cards per page by default; English words sit in the middle of the card, Swedish words a third from the bottom; British pronunciation above one-word English cards; a little extra letter spacing for easier reading.
 
 ## License
 

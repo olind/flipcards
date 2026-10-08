@@ -26,7 +26,7 @@
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.45 var(--body); }
 
-  .app { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 24px; padding: 24px; align-items: start; }
+  .app { display: grid; grid-template-columns: minmax(0, 360px) minmax(0, 1fr); gap: 34px; padding: 24px; align-items: start; }
   @media (max-width: 860px) { .app { grid-template-columns: minmax(0, 1fr); } }
 
   .panel { background: var(--paper); border-radius: 10px; padding: 20px; display: grid; gap: 16px; position: sticky; top: 24px; max-height: calc(100vh - 48px); overflow-y: auto; }
@@ -46,13 +46,15 @@
   .primary:hover { filter: brightness(1.08); }
   .primary:disabled { opacity: .6; cursor: progress; }
   .secondary { background: none; border: 0; color: var(--accent); font-size: 13px; padding: 0; margin-top: -8px; text-decoration: underline; }
-  .howto { display: grid; gap: 8px; font-size: 13.5px; border-top: 1px solid #d5dbe3; padding-top: 16px; }
-  .howto ol { margin: 0; padding-left: 20px; display: grid; gap: 6px; }
-  .howto p { margin: 0; color: var(--muted); font-size: 12.5px; }
+  .secondary + .hint { margin-top: 2px; }
+  label .hint { font-weight: 400; }
+  .center { text-align: center; }
+  hr { border: 0; border-top: 1px solid #d5dbe3; margin: 0; width: 100%; }
+  .sign { width: 50%; justify-self: center; }
 
-  .preview { display: grid; gap: 20px; justify-items: center; zoom: 0.62; }
+  .preview { display: grid; gap: 20px; justify-items: start; zoom: 0.62; }
   @media (max-width: 860px) { .preview { zoom: 0.42; } }
-  .sheet-label { font: 700 22px var(--body); color: var(--muted); justify-self: start; margin-bottom: -12px; }
+  .sheet-label { font: 700 22px var(--body); color: var(--muted); width: 210mm; margin-bottom: -12px; }
 
   /* A4 sheet */
   /* On screen the sheet shows the whole A4 page with its 15mm margin; in print the browser adds that margin via @page. */
@@ -60,9 +62,10 @@
   .grid { width: 100%; height: 100%; display: grid; }
   .card { outline: 0.25mm dashed var(--line); position: relative; overflow: hidden; }
   .card.empty { outline-color: transparent; }
-  /* The word sits a third of the way up from the bottom (see TEXT_Y), centred left to right. */
-  .word { position: absolute; left: 7mm; right: 7mm; top: 66.667%; transform: translateY(-50%); text-align: center; font-family: var(--body); font-weight: 700; line-height: 1.15; letter-spacing: 0.08em; white-space: nowrap; }
-  .ipa { position: absolute; left: 7mm; right: 7mm; text-align: center; font-family: var(--ipa); color: var(--muted); line-height: 1.15; white-space: nowrap; }
+  /* Pronunciation and word sit together as one block; its centre height is set per side (TEXT_Y). */
+  .text { position: absolute; left: 7mm; right: 7mm; transform: translateY(-50%); display: flex; flex-direction: column; align-items: center; gap: 1.5mm; text-align: center; }
+  .word { font-family: var(--body); font-weight: 700; line-height: 1.15; letter-spacing: 0.08em; white-space: nowrap; }
+  .ipa { font-family: var(--ipa); color: var(--muted); line-height: 1.15; white-space: nowrap; }
   .tag { position: absolute; font: 700 7pt var(--body); color: var(--muted); letter-spacing: .06em; text-transform: uppercase; }
   .tag.set { bottom: 2.5mm; right: 3mm; text-transform: none; letter-spacing: 0; }
 
@@ -83,8 +86,8 @@
 <div class="app">
   <form class="panel" id="settings" onsubmit="return false">
     <h1>Flip cards: glosor</h1>
-    <p class="hint">Generates flip cards from a word list. The format is: <i>english - swedish</i></p>
-    <label for="words">Word list
+    <p class="hint">Generates flip cards from a word list. You can draw images on each card to help memorize.</p>
+    <label for="words"><span>Word list<br><span class="hint"><i>English - Swedish</i></span></span>
       <textarea id="words" spellcheck="false"></textarea>
     </label>
 
@@ -101,19 +104,13 @@
     </label>
     <div class="status" id="status"></div>
     <button type="button" class="primary" id="pdf">Download PDF</button>
-    <button type="button" class="secondary" id="print">Or print from browser (can mess up the margins on the cards)</button>
+    <div class="center">
+      <button type="button" class="secondary" id="print">Or print from browser</button>
+      <p class="hint">Can mess up the margins on the cards</p>
+    </div>
+    <hr>
+    <img class="sign" src="glhf-ola.png" alt="GLHF, Ola">
 
-    <section class="howto" aria-labelledby="howto-title">
-      <h2 id="howto-title">How to print</h2>
-      <ol>
-        <li>Click <b>Download PDF</b> and open the file (it opens in Preview on a Mac). Choose <b>File → Print</b>, set scale to <b>100%</b> (not "Scale to fit"), and choose pages <b>1 to 1</b>. Print.</li>
-        <li>Take the printed sheet and turn it over <b>sideways, like a page in a book</b>. Keep the top of the page at the same end as before.</li>
-        <li>Put it back in the paper tray and print pages <b>2 to 2</b>.</li>
-        <li>Cut along the dashed lines.</li>
-      </ol>
-      <p id="moresheets" hidden></p>
-      <p><b>First time with your printer?</b> Pencil a small arrow pointing up on a blank sheet, put it in the tray, and print page 1. Where the arrow ends up shows whether the tray prints on the side facing up or down, and which end goes in first. Then you know how to put the sheet back for page 2.</p>
-    </section>
   </form>
   <main class="preview" id="preview"></main>
 </div>
@@ -129,7 +126,13 @@ embarrassing – pinsam
 ask for directions – fråga efter vägen
 enormous – enorm
 famous – känd
-celebrity- kändis`;
+celebrity- kändis
+traffic lights – trafikljus
+pedestrian – fotgängare
+bicycle – cykel
+crossroads – vägkorsning
+dangerous – farlig
+careful – försiktig`;
 
 const LAYOUTS = { 8: [2, 4], 12: [3, 4], 16: [4, 4] };
 const $ = id => document.getElementById(id);
@@ -159,9 +162,11 @@ function parseLine(line) {
 
 // Card geometry shared by the preview and the PDF (mm). Cards fill the 180 x 267mm area inside the page margin.
 const AREA_W = 180, AREA_H = 267, PAD_X = 7, PAD_Y = 9;
-const TEXT_Y = 2 / 3;   // the word's centre, as a share of the card height from the top
 const LINE = 1.15;      // line height, in font sizes
 const PT = 25.4 / 72;   // mm per point
+// Where the text block's centre sits, as a share of the card height from the top: English in the middle,
+// Swedish a third of the way up from the bottom.
+const TEXT_Y = { en: 1 / 2, sv: 2 / 3 };
 const SPACING = 0.08;   // extra space after each letter, in font sizes: a little air helps readers with dyslexia
 
 // A word's width in mm including the letter spacing; widthOf(text, pt) measures it without.
@@ -169,9 +174,9 @@ const spacedWidth = (widthOf, text, pt) => widthOf(text, pt) + SPACING * pt * PT
 
 // Start at full size and shrink only until the text fits the card's safe area, so short words stay big.
 // widthOf(text, pt) gives a line's width in mm. Returns the font size and the wrapped lines.
-function fitText(text, cols, rows, widthOf) {
+function fitText(text, cols, rows, widthOf, ty = 0.5) {
   const innerW = AREA_W / cols - 2 * PAD_X;
-  const innerH = 2 * (AREA_H / rows * Math.min(TEXT_Y, 1 - TEXT_Y) - PAD_Y);
+  const innerH = 2 * (AREA_H / rows * Math.min(ty, 1 - ty) - PAD_Y);
   const words = text.split(/\s+/);
   let pt = { 2: 26, 3: 20, 4: 15 }[cols], lines;
   for (;; pt -= 0.5) {
@@ -199,7 +204,7 @@ function screenWidthIPA(text, pt) {
 }
 
 // The pronunciation line sits just above the word, a bit smaller, shrunk further if it is too wide.
-const IPA_GAP = 1.5; // mm between pronunciation and word
+const IPA_GAP = 1.5; // mm between pronunciation and word (same as the .text gap)
 function fitIPA(ipa, wordPt, cols, widthOf) {
   const innerW = AREA_W / cols - 2 * PAD_X;
   let pt = Math.max(8, wordPt * 0.65);
@@ -210,7 +215,7 @@ function fitIPA(ipa, wordPt, cols, widthOf) {
 // ---- Pronunciation: British (RP/UK) IPA from Wiktionary, only for one-word English cards.
 // Answers are remembered in this browser, so each word is looked up once.
 let ipaCache = {};
-try { ipaCache = JSON.parse(load("ipa") || "{}") || {}; } catch (e) {}
+try { ipaCache = JSON.parse(load("ipa2") || "{}") || {}; } catch (e) {}
 const ipaPending = new Map(); // word -> promise, so each word is asked for at most once per visit
 const ipaQueue = [];
 let ipaActive = 0, ipaRenderQueued = false;
@@ -220,7 +225,7 @@ const oneWord = en => /^[a-z]+(?:['’-][a-z]+)*$/i.test(en.trim());
 function ipaFor(pair) {
   if (!$("showipa").checked || !oneWord(pair.en)) return "";
   const word = pair.en.trim().toLowerCase();
-  if (word in ipaCache) return ipaCache[word];
+  if (word in ipaCache) return tidyIPA(ipaCache[word]);
   lookupIPA(word);
   return "";
 }
@@ -236,7 +241,7 @@ function pumpIPA() {
     const { word, resolve } = ipaQueue.shift();
     ipaActive++;
     fetchIPA(word).then(ipa => {
-      if (ipa !== null) { ipaCache[word] = ipa; store("ipa", JSON.stringify(ipaCache)); }
+      if (ipa !== null) { ipaCache[word] = ipa; store("ipa2", JSON.stringify(ipaCache)); }
       ipaActive--;
       resolve();
       pumpIPA();
@@ -259,18 +264,22 @@ async function fetchIPA(word) {
 
 // Wiktionary writes pronunciations as {{IPA|en|/ˈpeɪvmənt/|a=RP,GA}}. Take the first one marked RP, UK or
 // SSB (standard British), else one with no accent marked; never one marked only for another accent.
+// When it lists a reduced form next to the full one (/ˈdeɪn.ʒə.rəs/ and /ˈdeɪn.d͡ʒə.rəs/), take the full one.
 function pickBritish(wikitext) {
   const english = (wikitext.split("==English==")[1] || "").split(/\n==[^=]/)[0];
   const found = [...english.matchAll(/\{\{IPA\|en\|([^}]*)\}\}/g)].map(m => {
     const parts = m[1].split("|");
-    return { accent: (parts.find(x => x.startsWith("a=")) || "").slice(2), ipa: parts.find(x => /^\/.+\/$/.test(x)) };
+    const forms = parts.filter(x => /^\/.+\/$/.test(x));
+    const full = forms.find(f => !forms.some(g => g !== f && g.replace(/d͡ʒ/g, "ʒ") === f));
+    return { accent: (parts.find(x => x.startsWith("a=")) || "").slice(2), ipa: full };
   }).filter(x => x.ipa);
   const best = found.find(x => /\b(RP|UK|SSB)\b/.test(x.accent)) || found.find(x => !x.accent);
   return best ? tidyIPA(best.ipa) : "";
 }
 
-// Match the style of British learner dictionaries: r instead of ɹ, optional sounds shown plainly, no tie bars.
-const tidyIPA = ipa => ipa.replace(/ɹ/g, "r").replace(/[()]/g, "").replace(/\u0361/g, "");
+// Match the style of British learner dictionaries (Cambridge, Oxford): r instead of ɹ, eə and e instead of
+// Wiktionary's newer ɛː and ɛ, optional sounds shown plainly, no tie bars. Safe to run twice.
+const tidyIPA = ipa => ipa.replace(/ɹ/g, "r").replace(/ɛː/g, "eə").replace(/ɛ/g, "e").replace(/[()]/g, "").replace(/\u0361/g, "");
 
 // Start any missing lookups and wait for them (at most 15 seconds), so the PDF gets them too.
 async function ipaReady() {
@@ -280,12 +289,13 @@ async function ipaReady() {
 
 function cardHTML(pair, lang, setName, cols, rows) {
   if (!pair) return `<div class="card empty"></div>`;
-  const { pt, lines } = fitText(pair[lang], cols, rows, screenWidth);
+  const { pt, lines } = fitText(pair[lang], cols, rows, screenWidth, TEXT_Y[lang]);
   const ipa = lang === "en" ? ipaFor(pair) : "";
-  const above = 100 * (1 - TEXT_Y), half = lines.length * pt * PT * LINE / 2 + IPA_GAP;
   return `<div class="card">
-    ${ipa ? `<span class="ipa" style="font-size:${fitIPA(ipa, pt, cols, screenWidthIPA)}pt;bottom:calc(${above}% + ${half}mm)">${esc(ipa)}</span>` : ""}
-    <span class="word" style="font-size:${pt}pt">${lines.map(esc).join("<br>")}</span>
+    <div class="text" style="top:${TEXT_Y[lang] * 100}%">
+      ${ipa ? `<span class="ipa" style="font-size:${fitIPA(ipa, pt, cols, screenWidthIPA)}pt">${esc(ipa)}</span>` : ""}
+      <span class="word" style="font-size:${pt}pt">${lines.map(esc).join("<br>")}</span>
+    </div>
     ${setName ? `<span class="tag set">${esc(setName)}</span>` : ""}
   </div>`;
 }
@@ -322,15 +332,12 @@ function render() {
   const bad = pairs.filter(p => p.bad).length;
   const pages = Math.ceil(pairs.length / per) || 0;
   $("status").innerHTML = bad ? `<span class="warn">${bad} line${bad > 1 ? "s have" : " has"} no translation. Check the dash.</span>` : "";
-  $("moresheets").hidden = pages < 2;
-  $("moresheets").innerHTML = pages < 2 ? "" : "<b>More than one sheet:</b> do one sheet at a time. " +
-    Array.from({ length: pages }, (_, i) => `Sheet ${i + 1} is pages ${i * 2 + 1} and ${i * 2 + 2}`).join(", ") + ".";
 
   const gridStyle = `grid-template-columns:repeat(${cols},1fr);grid-template-rows:repeat(${rows},1fr)`;
   let html = "";
   sheetPages().forEach((slots, i) => {
-    const n = pages > 1 ? ` ${Math.floor(i / 2) + 1}` : "";
-    html += `<div class="sheet-label">Sheet${n}, ${i % 2 ? "back" : "front"}</div><section class="sheet"><div class="grid" style="${gridStyle}">` +
+    const n = pages > 1 ? ` (sheet ${Math.floor(i / 2) + 1})` : "";
+    html += `<div class="sheet-label">${i % 2 ? "Swedish" : "English"}${n}</div><section class="sheet"><div class="grid" style="${gridStyle}">` +
       slots.map(s => cardHTML(s && s.pair, s && s.lang, setName, cols, rows)).join("") + `</div></section>`;
   });
   $("preview").innerHTML = html;
@@ -384,23 +391,32 @@ function pdfCutLines(doc, slots, cols, rows, w, h) {
 function pdfCard(doc, font, ipaFont, slot, x, y, w, h, cols, rows, setName) {
   const { pair, lang } = slot;
   doc.setFont(font, "bold");
-  const { pt, lines } = fitText(pair[lang], cols, rows, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); });
+  const { pt, lines } = fitText(pair[lang], cols, rows, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); }, TEXT_Y[lang]);
   doc.setFontSize(pt);
   const lineH = pt * PT * LINE;
-  const cy = y + h * TEXT_Y - lines.length * lineH / 2;
+
+  // Pronunciation (if any) and word form one block, centred at this side's TEXT_Y.
+  const ipa = lang === "en" && ipaFont ? ipaFor(pair) : "";
+  let ipaPt = 0;
+  if (ipa) {
+    doc.setFont(ipaFont, "normal");
+    ipaPt = fitIPA(ipa, pt, cols, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); });
+  }
+  const ipaH = ipa ? ipaPt * PT * LINE + IPA_GAP : 0;
+  const top = y + h * TEXT_Y[lang] - (ipaH + lines.length * lineH) / 2;
+  if (ipa) {
+    doc.setFontSize(ipaPt);
+    doc.setTextColor(107, 118, 134);
+    doc.text(ipa, x + w / 2, top + ipaPt * PT * LINE / 2, { align: "center", baseline: "middle" });
+  }
+
+  const cy = top + ipaH;
+  doc.setFont(font, "bold");
+  doc.setFontSize(pt);
   doc.setTextColor(31, 42, 55);
   // Centred by hand, since jsPDF's own centring ignores the letter spacing.
   lines.forEach((l, i) => doc.text(l, x + (w - spacedWidth(t => doc.getTextWidth(t), l, pt)) / 2, cy + lineH * (i + 0.5),
     { baseline: "middle", charSpace: SPACING * pt * PT }));
-
-  const ipa = lang === "en" && ipaFont ? ipaFor(pair) : "";
-  if (ipa) {
-    doc.setFont(ipaFont, "normal");
-    const ipaPt = fitIPA(ipa, pt, cols, (t, size) => { doc.setFontSize(size); return doc.getTextWidth(t); });
-    doc.setFontSize(ipaPt);
-    doc.setTextColor(107, 118, 134);
-    doc.text(ipa, x + w / 2, cy - IPA_GAP - ipaPt * PT * LINE / 2, { align: "center", baseline: "middle" });
-  }
 
   if (setName) {
     doc.setFont(font, "bold");
