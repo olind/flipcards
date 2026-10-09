@@ -55,10 +55,14 @@
   hr { border: 0; border-top: 1px solid #d5dbe3; margin: 0; width: 100%; }
   .sign { width: 50%; justify-self: center; }
 
-  .preview { display: grid; gap: 20px; justify-items: start; zoom: 0.62; }
-  @media (max-width: 860px) { .preview { zoom: 0.42; } }
-  @media (max-width: 400px) { .preview { zoom: 0.36; } }
-  .sheet-label { font: 700 22px var(--body); color: var(--muted); width: 210mm; margin-bottom: -12px; }
+  /* The true-size sheet is shrunk with a transform (--scale, set by fitPreview to fit the column) inside a box of the
+     shrunk size. Not CSS zoom: Safari on iPhone drew the zoomed sheet wrong. */
+  .preview { --scale: 0.62; display: grid; gap: 12px; justify-items: start; }
+  .sheet-label { font: 700 14px var(--body); color: var(--muted); margin-bottom: -6px; }
+  .sheet-box { width: calc(210mm * var(--scale)); height: calc(297mm * var(--scale)); }
+  .sheet-box .sheet { transform: scale(var(--scale)); transform-origin: 0 0; }
+  /* Cut lines one screen pixel wide after shrinking; thinner ones disappear in Safari. */
+  @media screen { .sheet-box .card { outline-width: calc(1px / var(--scale)); } }
 
   /* A4 sheet */
   /* On screen the sheet shows the whole A4 page with its 15mm margin; in print the browser adds that margin via @page. */
@@ -78,10 +82,12 @@
     body { background: #fff; }
     .app { display: block; padding: 0; }
     .panel, .sheet-label { display: none; }
-    .preview { zoom: 1; display: block; }
+    .preview { display: block; }
+    .sheet-box { display: contents; }
+    .sheet-box .sheet { transform: none; }
     /* 180 x 267mm fits inside the 15mm page margin; a few mm less so rounding never spills onto an extra page. */
     .sheet { width: 180mm; height: 262mm; padding: 0; box-shadow: none; break-after: page; }
-    .sheet:last-child { break-after: auto; }
+    .sheet-box:last-child .sheet { break-after: auto; }
     .card { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   }
 </style>
@@ -341,8 +347,8 @@ function render() {
   let html = "";
   sheetPages().forEach((slots, i) => {
     const n = pages > 1 ? ` (sheet ${Math.floor(i / 2) + 1})` : "";
-    html += `<div class="sheet-label">${i % 2 ? "Swedish" : "English"}${n}</div><section class="sheet"><div class="grid" style="${gridStyle}">` +
-      slots.map(s => cardHTML(s && s.pair, s && s.lang, setName, cols, rows)).join("") + `</div></section>`;
+    html += `<div class="sheet-label">${i % 2 ? "Swedish" : "English"}${n}</div><div class="sheet-box"><section class="sheet"><div class="grid" style="${gridStyle}">` +
+      slots.map(s => cardHTML(s && s.pair, s && s.lang, setName, cols, rows)).join("") + `</div></section></div>`;
   });
   $("preview").innerHTML = html;
 }
@@ -477,6 +483,14 @@ async function downloadPDF() {
 }
 $("pdf").addEventListener("click", downloadPDF);
 
+// Preview scale: 0.62 of true size, or smaller so the sheet fits the column's width (phones, tablets).
+const SHEET_PX = 210 * 96 / 25.4;
+function fitPreview() {
+  $("preview").style.setProperty("--scale", Math.min(0.62, $("preview").clientWidth / SHEET_PX).toFixed(4));
+}
+window.addEventListener("resize", fitPreview);
+
+fitPreview();
 render();
 document.fonts.ready.then(render); // measure again once the web fonts have loaded
 </script>
