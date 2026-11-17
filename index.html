@@ -1,5 +1,44 @@
 <!doctype html>
+<html lang="sv">
+<head>
 <meta charset="utf-8">
-<meta http-equiv="refresh" content="0; url=flipcards.html">
-<title>Glosor Flipcards</title>
-<a href="flipcards.html">Glosor Flipcards</a>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>School tools</title>
+<style>
+  @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Regular.ttf"); font-weight: 400; }
+  @font-face { font-family: "Atkinson Hyperlegible"; src: url("vendor/AtkinsonHyperlegible-Bold.ttf"); font-weight: 700; }
+  :root {
+    --ink: #1f2a37;
+    --muted: #6b7686;
+    --ground: #eef1f5;
+    --paper: #ffffff;
+    --accent: #2f6fd6;
+    --line: #9aa5b4;
+    --body: "Atkinson Hyperlegible", Verdana, system-ui, sans-serif;
+  }
+  body {
+    margin: 0; background: var(--ground); color: var(--ink);
+    font: 18px/1.45 var(--body);
+    padding: 40px max(16px, env(safe-area-inset-right, 0px)) 40px max(16px, env(safe-area-inset-left, 0px));
+  }
+  main { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
+  h1 { margin: 0 0 6px; font-size: 1.6rem; }
+  a.tool {
+    display: block; padding: 16px 18px; background: var(--paper); color: var(--ink);
+    border: 1px solid var(--line); border-radius: 8px; text-decoration: none;
+  }
+  a.tool:hover, a.tool:focus-visible { border-color: var(--accent); outline: 2px solid var(--accent); outline-offset: -1px; }
+  a.tool b { display: block; color: var(--accent); font-size: 1.15rem; }
+  a.tool span { color: var(--muted); }
+  .sign { width: 50%; justify-self: center; margin-top: 12px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>School tools</h1>
+  <a class="tool" href="flipcards.html"><b>Flip cards: glosor</b><span>Skriv in glosor och skriv ut flip cards</span></a>
+  <a class="tool" href="langdenheter.pdf"><b>Omvandla längdenheter</b><span>m, dm, cm och mm på ett A4 som viks till A5</span></a>
+  <img class="sign" src="glhf-ola.png" alt="GLHF, Ola">
+</main>
+</body>
+</html>

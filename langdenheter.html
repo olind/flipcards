@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="sv">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Omvandla längdenheter</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lexend:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,700;12..96,800&display=swap">
+<style>
+/* One A4 folded in half to A5 (top half front, bottom half back): ruler motif, one colour per unit, units in a list so km/mil/µm/nm can be added later */
+:root {
+  --bg: #ffffff;
+  --ink: #1b2233;
+  --muted: #5f6879;
+  --line: #d3d8e2;
+  --soft: #f2f4f8;
+  --m: #1d5bbf;
+  --dm: #0d8165;
+  --cm: #b36d00;
+  --mm: #b02f68;
+  --comma: #d4281c;
+  --display: "Bricolage Grotesque", "Avenir Next", system-ui, sans-serif;
+  --body: "Lexend", "Segoe UI", system-ui, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #12161f; --ink: #e8ecf3; --muted: #9aa3b4; --line: #333b4b; --soft: #1b212d;
+    --m: #78a8ff; --dm: #4fd1ad; --cm: #f2b24d; --mm: #f080b2; --comma: #ff6b5e;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #12161f; --ink: #e8ecf3; --muted: #9aa3b4; --line: #333b4b; --soft: #1b212d;
+  --m: #78a8ff; --dm: #4fd1ad; --cm: #f2b24d; --mm: #f080b2; --comma: #ff6b5e;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--bg); color: var(--ink);
+  font: 16px/1.45 var(--body);
+  padding-block: 28px 48px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+}
+.sheet { max-width: 186mm; margin: 0 auto; display: grid; gap: 26px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.1; }
+h1 { font-size: 2.1rem; font-weight: 800; letter-spacing: -0.01em; }
+h2 { font-size: 1.15rem; font-weight: 700; }
+p { margin: 0; }
+.lead { color: var(--muted); margin-top: 4px; }
+section { display: grid; gap: 10px; break-inside: avoid; }
+.side { display: grid; gap: 26px; align-content: start; }
+.note { color: var(--muted); font-size: 0.9rem; }
+.home { color: var(--muted); font-size: 0.9rem; }
+.sign { width: 160px; justify-self: center; }
+
+.u-m { color: var(--m); } .u-dm { color: var(--dm); } .u-cm { color: var(--cm); } .u-mm { color: var(--mm); }
+.unit { font-weight: 700; }
+
+/* Steps strip */
+.steps { display: flex; align-items: stretch; gap: 0; }
+.box {
+  flex: 1 1 0; min-width: 0; text-align: center;
+  border: 2px solid currentColor; border-radius: 6px; padding: 8px 4px;
+}
+.box b { display: block; font-family: var(--display); font-size: 1.6rem; line-height: 1; }
+.box span { display: block; font-size: 0.78rem; color: var(--muted); margin-top: 4px; }
+.arrow {
+  flex: 0 0 auto; width: 64px; display: grid; align-content: center; gap: 6px;
+  text-align: center; font-weight: 700; font-size: 0.9rem; font-variant-numeric: tabular-nums;
+}
+.arrow .down { color: var(--ink); }
+.arrow .up { color: var(--muted); }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 20px; }
+.rules p { padding-left: 10px; border-left: 3px solid var(--line); }
+
+/* Tables */
+.scroll { overflow-x: auto; }
+table { border-collapse: collapse; width: 100%; font-variant-numeric: tabular-nums; }
+th, td { border: 1px solid var(--line); padding: 7px 10px; text-align: right; white-space: nowrap; }
+th { font-family: var(--display); font-size: 1.05rem; background: var(--soft); text-align: center; }
+th small { display: block; font-family: var(--body); font-weight: 400; font-size: 0.75rem; color: var(--muted); }
+.conv td { font-size: 1.1rem; }
+.conv td .unit { font-size: 0.95rem; }
+.conv td.one { background: var(--soft); font-weight: 700; outline: 2px solid var(--ink); outline-offset: -2px; }
+
+/* Place-value tables */
+.pv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.pv { min-width: 0; display: grid; gap: 6px; }
+.pv h3 { margin: 0; font-size: 1rem; }
+.pv td { text-align: center; font-size: 1.25rem; font-weight: 700; position: relative; padding: 5px 0; width: 17%; }
+.pv td.gray { color: var(--line); font-weight: 400; }
+.pv td.c::after {
+  content: ","; position: absolute; right: -5px; bottom: 0px;
+  color: var(--comma); font-size: 1.7rem; line-height: 1; font-weight: 700; z-index: 1;
+}
+.pv .read { text-align: right; padding: 5px 12px; font-size: 1.05rem; width: auto; border-right: 3px solid var(--ink); }
+.pv .scroll { padding-right: 8px; }
+
+/* Ruler at true size: 100 mm */
+.ruler-wrap { overflow-x: auto; padding-bottom: 4px; }
+.ruler {
+  position: relative; width: 100.4mm; height: 14mm;
+  border: 1px solid var(--ink); border-top: none; border-radius: 0 0 2px 2px;
+  background-color: var(--bg);
+  box-sizing: border-box;
+}
+.ruler b { position: absolute; top: 0; width: 0.2mm; height: 2.3mm; margin-left: 0.1mm; background: var(--ink); }
+.ruler b.h { height: 3.8mm; }
+.ruler b.f { height: 5.5mm; width: 0.3mm; }
+.ruler i {
+  position: absolute; top: 6.3mm; transform: translateX(-50%);
+  font-style: normal; font-size: 9pt; font-weight: 700;
+}
+.ruler i.first { transform: translateX(-10%); }
+.ruler i.last { transform: translateX(-90%); }
+
+@media (max-width: 560px) {
+  h1 { font-size: 1.7rem; }
+  .arrow { width: 46px; font-size: 0.8rem; }
+  .box b { font-size: 1.3rem; }
+  .rules, .pv-grid { grid-template-columns: 1fr; }
+  th, td { padding: 6px 6px; }
+  .conv td { font-size: 0.95rem; }
+}
+
+@media print {
+  :root, :root[data-theme="dark"] {
+    --bg: #fff; --ink: #000; --muted: #444; --line: #bbb; --soft: #eef0f4;
+    --m: #1d5bbf; --dm: #0d8165; --cm: #a86400; --mm: #b02f68; --comma: #d4281c;
+    color-scheme: light;
+  }
+  @page { size: A4; margin: 0; }
+  body { margin: 0; padding: 0; font-size: 10pt; }
+  .sheet { max-width: none; gap: 0; }
+  .side {
+    height: 148.5mm; box-sizing: border-box; overflow: hidden;
+    padding: 10mm 25mm; gap: 5mm; align-content: center;
+  }
+  h1 { font-size: 20pt; }
+  h2 { font-size: 12pt; }
+  .box b { font-size: 16pt; }
+  .arrow { width: 15mm; font-size: 9pt; }
+  th, td { padding: 4px 6px; }
+  .conv td { font-size: 11pt; }
+  .pv-grid { grid-template-columns: 1fr; gap: 10mm; }
+  .pv td { font-size: 13pt; padding: 3px 0; }
+
+  .home { display: none; }
+  .sign { width: 30mm; }
+  * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+}
+</style>
+</head>
+<body>
+
+<main class="sheet">
+  <a class="home" href="index.html">← Alla verktyg</a>
+  <div class="side">
+  <section>
+    <p class="note">1 dm = 10 cm = 100 mm</p>
+    <div class="ruler-wrap"><div class="ruler" id="ruler"></div></div>
+  </section>
+
+  <section>
+    <div class="steps" id="steps"></div>
+  </section>
+
+  <section>
+    <div class="scroll"><table class="conv" id="conv"></table></div>
+  </section>
+
+  </div>
+
+  <div class="side">
+  <section>
+    <div class="pv-grid" id="pv"></div>
+  </section>
+  <img class="sign" src="glhf-ola.png" alt="GLHF, Ola">
+  </div>
+</main>
+
+<script>
+// Each unit's size in millimetres. Add km, mil, µm or nm here later.
+const UNITS = [
+  { u: "m",  name: "meter",      mm: 1000 },
+  { u: "dm", name: "decimeter",  mm: 100 },
+  { u: "cm", name: "centimeter", mm: 10 },
+  { u: "mm", name: "millimeter", mm: 1 },
+];
+const ROWS_MM = [10000, 1000, 5000, 100, 10, 1];
+const EXAMPLES_MM = [2350, 400];
+
+const fmt = x => String(Math.round(x * 1e6) / 1e6).replace(".", ",");
+const unit = u => ` <span class="unit u-${u}">${u}</span>`;
+
+document.getElementById("steps").innerHTML = UNITS.map((x, i) =>
+  (i ? `<div class="arrow"><span class="down">×10 →</span><span class="up">← ÷10</span></div>` : "") +
+  `<div class="box u-${x.u}"><b>${x.u}</b><span>${x.name}</span></div>`
+).join("");
+
+document.getElementById("conv").innerHTML =
+  `<thead><tr>${UNITS.map(x => `<th class="u-${x.u}">${x.u}<small>${x.name}</small></th>`).join("")}</tr></thead>` +
+  `<tbody>${ROWS_MM.map(v => `<tr>${UNITS.map(x => {
+    const n = v / x.mm;
+    return `<td${n === 1 ? ' class="one"' : ""}>${fmt(n)}${unit(x.u)}</td>`;
+  }).join("")}</tr>`).join("")}</tbody>`;
+
+document.getElementById("pv").innerHTML = EXAMPLES_MM.map(v => {
+  const d = UNITS.map(x => Math.floor(v / x.mm) % 10);
+  const rows = UNITS.map((target, r) => {
+    const cells = d.map((digit, i) => {
+      const leading = i < r && d.slice(0, i + 1).every(z => z === 0);
+      const trailing = i > r && d.slice(i).every(z => z === 0);
+      const cls = [leading || trailing ? "gray" : "", i === r ? "c" : ""].filter(Boolean).join(" ");
+      return `<td${cls ? ` class="${cls}"` : ""}>${digit}</td>`;
+    }).join("");
+    return `<tr><td class="read">${fmt(v / target.mm)}${unit(target.u)}</td>${cells}</tr>`;
+  }).join("");
+  return `<div class="pv"><div class="scroll"><table>
+    <thead><tr><th class="read"></th>${UNITS.map(x => `<th class="u-${x.u}">${x.u}</th>`).join("")}</tr></thead>
+    <tbody>${rows}</tbody></table></div></div>`;
+}).join("");
+
+document.getElementById("ruler").innerHTML =
+  Array.from({ length: 101 }, (_, i) =>
+    `<b class="${i % 10 === 0 ? "f" : i % 5 === 0 ? "h" : ""}" style="left:${i}mm"></b>`).join("") +
+  Array.from({ length: 11 }, (_, i) =>
+    `<i class="${i === 0 ? "first" : i === 10 ? "last" : ""}" style="left:${i * 10}mm">${i}</i>`).join("");
+</script>
+</body>
+</html>
